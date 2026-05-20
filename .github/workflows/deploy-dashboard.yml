@@ -26,7 +26,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
-          cache: 'npm'
+          cache: "npm"
 
       - name: Cache node modules
         uses: actions/cache@v4
@@ -81,8 +81,6 @@ jobs:
           compose_file: ${{ env.DEPLOYMENT_PATH }}/dashboard-dev.yml
           env_file: ${{ env.DEPLOYMENT_PATH }}/${{ env.ENV_NAME_SHORT }}.env
 
-
-
   deploy-prod:
     name: Deploy prod
     runs-on: ubuntu-latest
@@ -106,7 +104,7 @@ jobs:
         with:
           portainer_url: https://portainer.moonlet.cloud
           portainer_access_token: ${{ secrets.PORTAINER_ACCESS_TOKEN }}
-          endpoint: moonlet
+          endpoint: moonlet-ai
           stack_name: ${{ env.STACK_NAME }}
           compose_file: ${{ env.DEPLOYMENT_PATH }}/dashboard.yml
           env_file: ${{ env.DEPLOYMENT_PATH }}/${{ env.ENV_NAME_SHORT }}.env
