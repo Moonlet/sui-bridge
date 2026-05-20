@@ -5,28 +5,25 @@ services:
   dashboard:
     image: ${DASHBOARD_IMAGE}
     secrets:
-      - source: SUI_BRIDGE_POSTGRES_URL_V3
+      - source: SUI_BRIDGE_POSTGRES_URL
         target: /run/secrets/sui-bridge-postgres-url
       - source: SUI_BRIDGE_TESTNET_POSTGRES_URL
         target: /run/secrets/sui-bridge-testnet-postgres-url
     networks:
       - net
-      - load_balancer_net
     deploy:
       mode: replicated
       replicas: 1
       placement:
         constraints:
-          - node.hostname==moonlet-swarm-prod-01
+          - node.hostname==moonlet-aiswarm-worker-01
 
 networks:
   net:
     driver: overlay
-  load_balancer_net:
-    external: true
 
 secrets:
-  SUI_BRIDGE_POSTGRES_URL_V3:
+  SUI_BRIDGE_POSTGRES_URL:
     external: true
   SUI_BRIDGE_TESTNET_POSTGRES_URL:
     external: true
