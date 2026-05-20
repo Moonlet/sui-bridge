@@ -11,6 +11,9 @@ services:
         target: /run/secrets/sui-bridge-testnet-postgres-url
     networks:
       - net
+      # Attached so the ai-tools LB (suianalytics.io vhost) can reach this
+      # service via overlay DNS as `sui_bridge_dashboard:3000`.
+      - load_balancer_net
     deploy:
       mode: replicated
       replicas: 1
@@ -21,6 +24,8 @@ services:
 networks:
   net:
     driver: overlay
+  load_balancer_net:
+    external: true
 
 secrets:
   SUI_BRIDGE_POSTGRES_URL:
