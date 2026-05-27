@@ -86,7 +86,7 @@ export function TokenTopHolders({ tokenId }: Props) {
                                 <TableCell>Address</TableCell>
                                 <TableCell align="right">Volume (USD)</TableCell>
                                 <TableCell align="right">Transfers</TableCell>
-                                <TableCell align="right">In / Out</TableCell>
+                                <TableCell align="right">Direction</TableCell>
                                 <TableCell align="right">Last seen</TableCell>
                             </TableRow>
                         </TableHead>
@@ -114,12 +114,19 @@ export function TokenTopHolders({ tokenId }: Props) {
                                 </TableRow>
                             )}
                             {holders.map(h => {
-                                const chain = h.address_type === 'sui' ? 'SUI' : 'ETH'
+                                // Sender address chain is the *source* chain.
+                                // address_type='eth' means the sender's address is on ETH,
+                                // so they bridged ETH → SUI (inflow).
+                                const senderChain = h.address_type === 'sui' ? 'SUI' : 'ETH'
+                                const direction =
+                                    senderChain === 'ETH'
+                                        ? { label: 'ETH → SUI', color: '#22C55E' }
+                                        : { label: 'SUI → ETH', color: '#EF4444' }
                                 const explorerUrl = formatExplorerUrl({
                                     network,
                                     address: h.address,
                                     isAccount: true,
-                                    chain,
+                                    chain: senderChain,
                                 })
                                 return (
                                     <TableRow key={`${h.address}-${h.rank}`} hover>
@@ -130,20 +137,6 @@ export function TokenTopHolders({ tokenId }: Props) {
                                         </TableCell>
                                         <TableCell>
                                             <Stack direction="row" spacing={1} alignItems="center">
-                                                <Chip
-                                                    label={chain}
-                                                    size="small"
-                                                    sx={{
-                                                        bgcolor:
-                                                            chain === 'SUI'
-                                                                ? 'rgba(77,162,255,0.15)'
-                                                                : 'rgba(98,126,234,0.15)',
-                                                        color:
-                                                            chain === 'SUI' ? '#4DA2FF' : '#627EEA',
-                                                        fontWeight: 600,
-                                                        minWidth: 44,
-                                                    }}
-                                                />
                                                 <Tooltip
                                                     title={`0x${h.address}`}
                                                     placement="top-start"
@@ -175,19 +168,16 @@ export function TokenTopHolders({ tokenId }: Props) {
                                         </TableCell>
                                         <TableCell align="right">{fNumber(h.tx_count)}</TableCell>
                                         <TableCell align="right">
-                                            <Typography variant="caption" color="success.main">
-                                                {fNumber(h.inflow_count)}
-                                            </Typography>
-                                            <Typography
-                                                variant="caption"
-                                                color="text.disabled"
-                                                sx={{ mx: 0.5 }}
-                                            >
-                                                /
-                                            </Typography>
-                                            <Typography variant="caption" color="error.main">
-                                                {fNumber(h.outflow_count)}
-                                            </Typography>
+                                            <Chip
+                                                label={direction.label}
+                                                size="small"
+                                                sx={{
+                                                    bgcolor: direction.color,
+                                                    color: '#fff',
+                                                    fontWeight: 700,
+                                                    fontSize: '0.7rem',
+                                                }}
+                                            />
                                         </TableCell>
                                         <TableCell align="right">
                                             <Typography variant="caption" color="text.secondary">
