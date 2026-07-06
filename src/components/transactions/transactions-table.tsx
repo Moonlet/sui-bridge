@@ -11,7 +11,6 @@ import {
     TableCell,
     TableRow,
     TextField,
-    Tooltip,
     Typography,
 } from '@mui/material'
 import { formatDistanceToNow } from 'date-fns'
@@ -31,8 +30,8 @@ import { InputAdornment } from '@mui/material'
 import { MultiAddressAutocomplete } from './multi-address'
 import { useDebounce } from 'use-debounce'
 import CloseIcon from '@mui/icons-material/Close'
-import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined'
 import { downloadCsv } from 'src/utils/csv'
+import { CopyButton } from '../copy-button'
 
 export function TransactionsTable({
     ethAddress,
@@ -447,14 +446,7 @@ const ActivitiesRow: React.FC<{
             {/* Sender with Improved Visibility */}
             <TableCell sx={{ paddingY: { xs: 0, sm: 2 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Tooltip title="Copy sender address">
-                        <IconButton
-                            size="small"
-                            onClick={() => navigator.clipboard.writeText(row.sender_address)}
-                        >
-                            <ContentCopyOutlinedIcon fontSize="small" sx={{ fontSize: 16 }} />
-                        </IconButton>
-                    </Tooltip>
+                    <CopyButton value={row.sender_address} title="Copy sender address" />
                     <Link
                         href={formatExplorerUrl({
                             network,
@@ -486,14 +478,7 @@ const ActivitiesRow: React.FC<{
             {/* Recipient with Improved Visibility */}
             <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Tooltip title="Copy recipient address">
-                        <IconButton
-                            size="small"
-                            onClick={() => navigator.clipboard.writeText(row.recipient_address)}
-                        >
-                            <ContentCopyOutlinedIcon fontSize="small" sx={{ fontSize: 16 }} />
-                        </IconButton>
-                    </Tooltip>
+                    <CopyButton value={row.recipient_address} title="Copy recipient address" />
                     <Link
                         href={formatExplorerUrl({
                             network,
@@ -566,14 +551,7 @@ const ActivitiesRow: React.FC<{
             {/* Transaction Link */}
             <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Tooltip title="Copy transaction hash">
-                        <IconButton
-                            size="small"
-                            onClick={() => navigator.clipboard.writeText(row.tx_hash)}
-                        >
-                            <ContentCopyOutlinedIcon fontSize="small" sx={{ fontSize: 16 }} />
-                        </IconButton>
-                    </Tooltip>
+                    <CopyButton value={row.tx_hash} title="Copy transaction hash" />
                     <Link
                         href={formatExplorerUrl({
                             network,
