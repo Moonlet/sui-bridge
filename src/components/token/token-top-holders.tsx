@@ -22,6 +22,7 @@ import {
 import { useState } from 'react'
 import useSWR from 'swr'
 import dayjs from 'dayjs'
+import { CopyButton } from 'src/components/copy-button'
 import { Iconify } from 'src/components/iconify'
 import { getNetwork } from 'src/hooks/get-network-storage'
 import { useGlobalContext } from 'src/provider/global-provider'
@@ -148,6 +149,11 @@ export function TokenTopHolders({ tokenId }: Props) {
                                                         {truncateAddress(`0x${h.address}`, 6)}
                                                     </Typography>
                                                 </Tooltip>
+                                                <CopyButton
+                                                    value={`0x${h.address}`}
+                                                    title="Copy address"
+                                                    size={14}
+                                                />
                                                 <IconButton
                                                     size="small"
                                                     href={explorerUrl}
