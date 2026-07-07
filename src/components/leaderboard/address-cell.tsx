@@ -1,7 +1,6 @@
-import { Box, IconButton, Tooltip, Typography } from '@mui/material'
+import { Box, Tooltip, Typography } from '@mui/material'
 import { useTheme, alpha } from '@mui/material/styles'
-import { useState } from 'react'
-import { Iconify } from 'src/components/iconify'
+import { CopyButton } from 'src/components/copy-button'
 import { truncateAddress } from 'src/config/helper'
 
 interface AddressCellProps {
@@ -12,19 +11,6 @@ interface AddressCellProps {
 
 export function AddressCell({ address, addressType, onClick }: AddressCellProps) {
     const theme = useTheme()
-    const [copied, setCopied] = useState(false)
-
-    const handleCopy = async (e: React.MouseEvent) => {
-        e.stopPropagation()
-        try {
-            const fullAddress = `0x${address}`
-            await navigator.clipboard.writeText(fullAddress)
-            setCopied(true)
-            setTimeout(() => setCopied(false), 2000)
-        } catch (err) {
-            console.error('Failed to copy address:', err)
-        }
-    }
 
     const chainColor = addressType === 'sui' ? '#4DA2FF' : '#627EEA'
     const chainIcon =
@@ -80,22 +66,7 @@ export function AddressCell({ address, addressType, onClick }: AddressCellProps)
             </Typography>
 
             {/* Copy button */}
-            <Tooltip title={copied ? 'Copied!' : 'Copy address'}>
-                <IconButton
-                    size="small"
-                    onClick={handleCopy}
-                    sx={{
-                        ml: 0.5,
-                        p: 0.5,
-                        color: copied ? 'success.main' : 'text.secondary',
-                        '&:hover': {
-                            bgcolor: alpha(theme.palette.primary.main, 0.08),
-                        },
-                    }}
-                >
-                    <Iconify icon={copied ? 'eva:checkmark-fill' : 'eva:copy-fill'} width={16} />
-                </IconButton>
-            </Tooltip>
+            <CopyButton value={`0x${address}`} title="Copy address" />
         </Box>
     )
 }

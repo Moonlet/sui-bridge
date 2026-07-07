@@ -6,7 +6,17 @@ import {
     TimelineItem,
     TimelineSeparator,
 } from '@mui/lab'
-import { Box, Card, CardHeader, Divider, Grid, Link, Stack, Typography } from '@mui/material'
+import {
+    Box,
+    Button,
+    Card,
+    CardHeader,
+    Divider,
+    Grid,
+    Link,
+    Stack,
+    Typography,
+} from '@mui/material'
 import { formatDistanceToNow } from 'date-fns'
 import { TransactionDetailSkeleton } from 'src/components/skeletons'
 import { formatExplorerUrl, truncateAddress } from 'src/config/helper'
@@ -18,6 +28,8 @@ import { fDateTime } from 'src/utils/format-time'
 import { buildProfileQuery } from 'src/utils/helper'
 import { getTokensList, TransactionHistoryType, TransactionType } from 'src/utils/types'
 import useSWR from 'swr'
+import { paths } from 'src/routes/paths'
+import { CopyButton } from '../copy-button'
 import { Iconify } from '../iconify'
 
 export function TransactionView({ tx }: { tx: string }) {
@@ -37,14 +49,32 @@ export function TransactionView({ tx }: { tx: string }) {
         return (
             <Box
                 sx={{
-                    alignContent: 'center',
-                    alignItems: 'center',
                     display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     flex: 1,
-                    alignSelf: 'center',
+                    gap: 2,
+                    py: 8,
+                    textAlign: 'center',
                 }}
             >
-                <Typography variant={'h4'}>Could not find the transaction</Typography>
+                <Iconify icon="eva:search-outline" width={64} sx={{ color: 'text.disabled' }} />
+                <Typography variant="h4">Transaction not found</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 420 }}>
+                    We couldn&apos;t find a bridge transaction with hash{' '}
+                    <Box component="span" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                        {truncateAddress(tx, 8)}
+                    </Box>
+                    . Double-check the hash or try switching the network.
+                </Typography>
+                <Button
+                    variant="contained"
+                    startIcon={<Iconify icon="eva:arrow-back-outline" />}
+                    onClick={() => router.push(paths.transactions.root)}
+                >
+                    Back to transactions
+                </Button>
             </Box>
         )
     }
@@ -134,7 +164,8 @@ export function TransactionView({ tx }: { tx: string }) {
                                                     boxShadow: 5,
                                                     transition: 'box-shadow 0.3s ease-in-out',
                                                     '&:hover': { boxShadow: 10 },
-                                                    minWidth: 500,
+                                                    width: '100%',
+                                                    minWidth: { xs: 0, md: 500 },
                                                     mx: 'auto', // centers the card horizontally
                                                 }}
                                             >
@@ -148,7 +179,7 @@ export function TransactionView({ tx }: { tx: string }) {
                                                 </Typography>
                                                 <Grid container spacing={2}>
                                                     {/* Left Column */}
-                                                    <Grid item xs={6}>
+                                                    <Grid item xs={12} sm={6}>
                                                         <Stack spacing={1}>
                                                             <Stack
                                                                 direction="row"
@@ -223,6 +254,11 @@ export function TransactionView({ tx }: { tx: string }) {
                                                                 >
                                                                     {truncateAddress(item.tx_hash)}
                                                                 </Link>
+                                                                <CopyButton
+                                                                    value={item.tx_hash}
+                                                                    title="Copy transaction hash"
+                                                                    size={14}
+                                                                />
                                                             </Stack>
 
                                                             <Stack
@@ -259,7 +295,7 @@ export function TransactionView({ tx }: { tx: string }) {
                                                         </Stack>
                                                     </Grid>
                                                     {/* Right Column */}
-                                                    <Grid item xs={6}>
+                                                    <Grid item xs={12} sm={6}>
                                                         <Stack spacing={1}>
                                                             <Stack
                                                                 direction="row"
@@ -291,6 +327,11 @@ export function TransactionView({ tx }: { tx: string }) {
                                                                         item.txn_sender,
                                                                     )}
                                                                 </Link>
+                                                                <CopyButton
+                                                                    value={item.txn_sender}
+                                                                    title="Copy sender address"
+                                                                    size={14}
+                                                                />
                                                             </Stack>
 
                                                             <Stack
@@ -419,7 +460,12 @@ function TransactionSummary({ tx, network }: { tx: TransactionType; network: NET
                             <Typography variant="caption" fontWeight="bold">
                                 Sender:
                             </Typography>
-                            <Box sx={{ display: 'flex' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <CopyButton
+                                    value={tx.sender_address}
+                                    title="Copy sender address"
+                                    size={14}
+                                />
                                 <Link
                                     href={formatExplorerUrl({
                                         network,
@@ -453,7 +499,12 @@ function TransactionSummary({ tx, network }: { tx: TransactionType; network: NET
                             <Typography variant="caption" fontWeight="bold">
                                 Recipient:
                             </Typography>
-                            <Box sx={{ display: 'flex' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <CopyButton
+                                    value={tx.recipient_address}
+                                    title="Copy recipient address"
+                                    size={14}
+                                />
                                 <Link
                                     href={formatExplorerUrl({
                                         network,
@@ -510,6 +561,11 @@ function TransactionSummary({ tx, network }: { tx: TransactionType; network: NET
                             <Typography variant="caption" fontWeight="bold">
                                 Tx:
                             </Typography>
+                            <CopyButton
+                                value={tx.tx_hash}
+                                title="Copy transaction hash"
+                                size={14}
+                            />
                             <Link
                                 href={formatExplorerUrl({
                                     network,

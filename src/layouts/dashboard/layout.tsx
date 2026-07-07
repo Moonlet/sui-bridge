@@ -9,6 +9,7 @@ import { Box, AppBar, Toolbar, Container, useMediaQuery } from '@mui/material'
 import { Logo } from 'src/components/logo'
 import { NetworkPopover } from '../components/network-popover'
 import { FilterPopover } from '../components/filter-popover'
+import { GlobalSearch } from '../components/global-search'
 import { NavTabs, MobileNavToggle, MobileNavMenu } from '../components/nav-tabs'
 import { layoutClasses } from '../classes'
 import { varAlpha } from 'src/theme/styles'
@@ -99,6 +100,7 @@ export function DashboardLayout({ sx, children, disableTimelines }: DashboardLay
                                 justifyContent: 'flex-end',
                             }}
                         >
+                            <GlobalSearch />
                             {!disableTimelines && <FilterPopover />}
                             <NetworkPopover />
                         </Box>
