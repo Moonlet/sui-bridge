@@ -27,7 +27,7 @@ import { DashboardContent } from 'src/layouts/dashboard'
 import { useGlobalContext } from 'src/provider/global-provider'
 import { endpoints, fetcher } from 'src/utils/axios'
 import { FlowRow, getTokensList } from 'src/utils/types'
-import { useState } from 'react'
+import { useQueryParamState } from 'src/hooks/use-query-param-state'
 
 const CHAIN_COLORS: Record<string, string> = {
     SUI: '#4DA2FF',
@@ -55,8 +55,15 @@ export default function FlowsPage() {
     const { timePeriod, selectedTokens } = useGlobalContext()
     const networkConfig = getNetworkConfig({ network })
 
-    const [unit, setUnit] = useState<'usd' | 'count'>('usd')
-    const [mode, setMode] = useState<'gross' | 'net'>('gross')
+    // Shareable toggles: mirrored into the URL query string
+    const [unit, setUnit] = useQueryParamState<'usd' | 'count'>('unit', {
+        defaultValue: 'usd',
+        deserialize: raw => (raw === 'count' ? raw : null),
+    })
+    const [mode, setMode] = useQueryParamState<'gross' | 'net'>('mode', {
+        defaultValue: 'gross',
+        deserialize: raw => (raw === 'net' ? raw : null),
+    })
 
     const { data, isLoading } = useSWR<FlowRow[]>(
         `${endpoints.flows}?network=${network}&period=${encodeURIComponent(timePeriod)}`,

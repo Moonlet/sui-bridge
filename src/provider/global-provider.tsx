@@ -1,7 +1,8 @@
 'use client'
 
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react'
-import { TimePeriod } from 'src/config/helper'
+import { TIME_PERIODS, TimePeriod } from 'src/config/helper'
+import { readQueryParam, writeQueryParams } from 'src/hooks/use-query-param-state'
 import { NETWORK } from 'src/hooks/get-network-storage'
 import { getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit'
 import { WagmiProvider } from 'wagmi'
@@ -47,24 +48,45 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
     const [timePeriod, setTimePeriodState] = useState<TimePeriod>('Last Month')
     const [selectedTokens, setSelectedTokensState] = useState<string[]>(['All'])
 
-    // Update local storage and state when timePeriod changes
+    // Update URL + local storage + state when timePeriod changes
     const setTimePeriod = (newTimePeriod: TimePeriod) => {
         setTimePeriodState(newTimePeriod)
         localStorage.setItem('timePeriod', newTimePeriod)
+        writeQueryParams({ period: newTimePeriod === 'Last Month' ? null : newTimePeriod })
     }
 
-    // Update local storage and state when selectedTokens changes
+    // Update URL + local storage + state when selectedTokens changes
     const setSelectedTokens = (newTokens: string[]) => {
         setSelectedTokensState(newTokens)
         localStorage.setItem('selectedTokens', JSON.stringify(newTokens))
+        const isDefault =
+            newTokens.length === 0 || (newTokens.length === 1 && newTokens[0] === 'All')
+        writeQueryParams({ tokens: isDefault ? null : newTokens.join(',') })
     }
 
     useEffect(() => {
-        // Load initial values from local storage when the component mounts
-        const tokens = localStorage.getItem('selectedTokens')
+        // Load initial values when the component mounts.
+        // Shareable URL params take precedence over local storage.
+        const urlPeriod = readQueryParam('period')
+        const urlTokens = readQueryParam('tokens')
+        const storedTokens = localStorage.getItem('selectedTokens')
 
-        setTimePeriodState((localStorage.getItem('timePeriod') || 'Last Month') as TimePeriod)
-        setSelectedTokensState(tokens ? JSON.parse(tokens) : ['All'])
+        if (urlPeriod && TIME_PERIODS.includes(urlPeriod as TimePeriod)) {
+            setTimePeriodState(urlPeriod as TimePeriod)
+            localStorage.setItem('timePeriod', urlPeriod)
+        } else {
+            setTimePeriodState((localStorage.getItem('timePeriod') || 'Last Month') as TimePeriod)
+        }
+
+        if (urlTokens) {
+            const tokens = urlTokens.split(',').filter(Boolean)
+            if (tokens.length > 0) {
+                setSelectedTokensState(tokens)
+                localStorage.setItem('selectedTokens', JSON.stringify(tokens))
+                return
+            }
+        }
+        setSelectedTokensState(storedTokens ? JSON.parse(storedTokens) : ['All'])
     }, [])
 
     useEffect(() => {

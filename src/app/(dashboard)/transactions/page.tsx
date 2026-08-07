@@ -7,7 +7,7 @@ export default function Page() {
     return (
         <DashboardContent maxWidth="xl">
             <PageTitle title="Bridge Transactions" />
-            <TransactionsTable />
+            <TransactionsTable syncFiltersToUrl />
         </DashboardContent>
     )
 }

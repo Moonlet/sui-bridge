@@ -14,7 +14,7 @@ import {
     Typography,
 } from '@mui/material'
 import { formatDistanceToNow } from 'date-fns'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { formatExplorerUrl, truncateAddress } from 'src/config/helper'
 import { getNetwork, NETWORK } from 'src/hooks/get-network-storage'
 import { useRouter } from 'src/routes/hooks'
@@ -31,6 +31,7 @@ import { MultiAddressAutocomplete } from './multi-address'
 import { useDebounce } from 'use-debounce'
 import CloseIcon from '@mui/icons-material/Close'
 import { downloadCsv } from 'src/utils/csv'
+import { readQueryParam, writeQueryParams } from 'src/hooks/use-query-param-state'
 import { CopyButton } from '../copy-button'
 
 export function TransactionsTable({
@@ -42,6 +43,7 @@ export function TransactionsTable({
     minHeight = 800,
     autoRefreshIntervalMs = 30000,
     autoRefreshEnabledDefault = true,
+    syncFiltersToUrl = false,
 }: {
     ethAddress?: string
     suiAddress?: string
@@ -51,29 +53,115 @@ export function TransactionsTable({
     minHeight?: number
     autoRefreshIntervalMs?: number
     autoRefreshEnabledDefault?: boolean
+    /** Mirror filters into the URL query string so the view is shareable */
+    syncFiltersToUrl?: boolean
 }) {
     const network = getNetwork()
     const router = useRouter()
-    const [page, setPage] = useState(0)
     const [totalItems, setTotalItems] = useState(0)
-    const [showFilters, setShowFilters] = useState(false)
     const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(autoRefreshEnabledDefault)
     const [lastUpdatedAt, setLastUpdatedAt] = useState<Date | null>(null)
-    const [filters, setFilters] = useState<{
-        flow: 'all' | 'inflow' | 'outflow'
+
+    type Flow = 'all' | 'inflow' | 'outflow'
+    type Filters = {
+        flow: Flow
         senders: string[]
         recipients: string[]
         amountFrom: string
         amountTo: string
-    }>({
+    }
+
+    const [filters, setFilters] = useState<Filters>({
         flow: 'all',
         senders: [],
         recipients: [],
         amountFrom: '',
         amountTo: '',
     })
+    const [page, setPage] = useState(0)
+    const [showFilters, setShowFilters] = useState(false)
     const [amountPreset, setAmountPreset] = useState<'any' | 'low' | 'medium' | 'large'>('any')
     const pageSize = limit
+
+    const filtersKey = (f: Filters) =>
+        [f.flow, f.senders.join(','), f.recipients.join(','), f.amountFrom, f.amountTo].join('|')
+
+    // Hydrate filters/page from the URL after mount (shareable links).
+    // `urlHydrated` is state (not a ref) so the write/reset effects below only
+    // activate once the hydrated values have actually been committed —
+    // otherwise they'd run with stale defaults and wipe the shared URL.
+    const [urlHydrated, setUrlHydrated] = useState(!syncFiltersToUrl)
+    const prevFiltersKey = useRef<string>(filtersKey(filters))
+    useEffect(() => {
+        if (!syncFiltersToUrl) {
+            return
+        }
+        const flowParam = readQueryParam('flow')
+        const urlFilters: Filters = {
+            flow: flowParam === 'inflow' || flowParam === 'outflow' ? (flowParam as Flow) : 'all',
+            senders: (readQueryParam('senders') || '').split(',').filter(Boolean),
+            recipients: (readQueryParam('recipients') || '').split(',').filter(Boolean),
+            amountFrom: readQueryParam('amountFrom') || '',
+            amountTo: readQueryParam('amountTo') || '',
+        }
+        const rawPage = Number(readQueryParam('page'))
+        const urlPage = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 0
+
+        const hasUrlFilters =
+            urlFilters.flow !== 'all' ||
+            urlFilters.senders.length > 0 ||
+            urlFilters.recipients.length > 0 ||
+            !!urlFilters.amountFrom ||
+            !!urlFilters.amountTo
+
+        if (hasUrlFilters) {
+            prevFiltersKey.current = filtersKey(urlFilters)
+            setFilters(urlFilters)
+            setShowFilters(true)
+        }
+        if (urlPage > 0) {
+            setPage(urlPage)
+        }
+        setUrlHydrated(true)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [syncFiltersToUrl])
+
+    // Mirror filters/page into the URL so the current view is shareable
+    useEffect(() => {
+        if (!syncFiltersToUrl || !urlHydrated) {
+            return
+        }
+        writeQueryParams({
+            flow: filters.flow === 'all' ? null : filters.flow,
+            senders: filters.senders.length ? filters.senders.join(',') : null,
+            recipients: filters.recipients.length ? filters.recipients.join(',') : null,
+            amountFrom: filters.amountFrom || null,
+            amountTo: filters.amountTo || null,
+            page: page > 0 ? String(page) : null,
+        })
+    }, [syncFiltersToUrl, urlHydrated, filters, page])
+
+    // Reset page when filters actually change (compare serialized values —
+    // StrictMode-safe, and URL hydration doesn't count as a change)
+    useEffect(() => {
+        if (!urlHydrated) {
+            return
+        }
+        const key = filtersKey(filters)
+        if (prevFiltersKey.current === key) {
+            return
+        }
+        prevFiltersKey.current = key
+        setPage(0)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        urlHydrated,
+        filters.flow,
+        filters.senders,
+        filters.recipients,
+        filters.amountFrom,
+        filters.amountTo,
+    ])
 
     const [debouncedFilters] = useDebounce(filters, 500)
     // Fetch paginated data
