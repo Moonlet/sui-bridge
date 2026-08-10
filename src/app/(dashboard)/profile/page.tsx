@@ -12,7 +12,7 @@ import {
     Typography,
 } from '@mui/material'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDebounce } from 'use-debounce'
 import { Iconify } from 'src/components/iconify'
 import { writeQueryParams } from 'src/hooks/use-query-param-state'
@@ -102,12 +102,17 @@ const ETH_LOGO_PATH = '/assets/icons/brands/eth.svg'
 
 function ShareProfileButton() {
     const [copied, setCopied] = useState(false)
+    const timeoutRef = useRef<ReturnType<typeof setTimeout>>()
+
+    // Clear pending feedback timeout on unmount
+    useEffect(() => () => clearTimeout(timeoutRef.current), [])
 
     const handleShare = async () => {
         try {
             await navigator.clipboard.writeText(window.location.href)
             setCopied(true)
-            setTimeout(() => setCopied(false), 2000)
+            clearTimeout(timeoutRef.current)
+            timeoutRef.current = setTimeout(() => setCopied(false), 2000)
         } catch (error) {
             console.error('Failed to copy profile link:', error)
         }

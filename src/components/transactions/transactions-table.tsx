@@ -96,13 +96,23 @@ export function TransactionsTable({
         if (!syncFiltersToUrl) {
             return
         }
+        // Only accept finite, non-negative numbers for amounts — a malformed
+        // shared link (?amountFrom=abc) would otherwise push NaN into the API
+        const readAmountParam = (key: string): string => {
+            const raw = readQueryParam(key)
+            if (!raw) {
+                return ''
+            }
+            const parsed = Number(raw)
+            return Number.isFinite(parsed) && parsed >= 0 ? raw : ''
+        }
         const flowParam = readQueryParam('flow')
         const urlFilters: Filters = {
             flow: flowParam === 'inflow' || flowParam === 'outflow' ? (flowParam as Flow) : 'all',
             senders: (readQueryParam('senders') || '').split(',').filter(Boolean),
             recipients: (readQueryParam('recipients') || '').split(',').filter(Boolean),
-            amountFrom: readQueryParam('amountFrom') || '',
-            amountTo: readQueryParam('amountTo') || '',
+            amountFrom: readAmountParam('amountFrom'),
+            amountTo: readAmountParam('amountTo'),
         }
         const rawPage = Number(readQueryParam('page'))
         const urlPage = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 0
