@@ -1,5 +1,5 @@
 import { IconButton, Tooltip } from '@mui/material'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Iconify } from '../iconify'
 
 // ----------------------------------------------------------------------
@@ -20,6 +20,9 @@ type CopyButtonProps = {
 export function CopyButton({ value, title = 'Copy', size = 16 }: CopyButtonProps) {
     const [copied, setCopied] = useState(false)
     const timeoutRef = useRef<ReturnType<typeof setTimeout>>()
+
+    // Clear pending feedback timeout on unmount
+    useEffect(() => () => clearTimeout(timeoutRef.current), [])
 
     const handleCopy = async (event: React.MouseEvent) => {
         event.stopPropagation()

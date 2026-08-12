@@ -19,12 +19,9 @@ import { Iconify } from 'src/components/iconify'
 import { truncateAddress } from 'src/config/helper'
 import { useRouter } from 'src/routes/hooks'
 import { paths } from 'src/routes/paths'
+import { ETH_ADDRESS_REGEX, HEX_64_REGEX, SUI_DIGEST_REGEX } from 'src/utils/address-validation'
 
 // ----------------------------------------------------------------------
-
-const ETH_ADDRESS_REGEX = /^0x[0-9a-fA-F]{40}$/
-const HEX_64_REGEX = /^(0x)?[0-9a-fA-F]{64}$/
-const SUI_DIGEST_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,50}$/
 
 type SearchResult = {
     key: string

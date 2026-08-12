@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import {
     Box,
     Card,
@@ -24,6 +24,7 @@ import { useRouter } from 'next/navigation'
 import useSWR from 'swr'
 import { endpoints, fetcher } from 'src/utils/axios'
 import { getNetwork } from 'src/hooks/get-network-storage'
+import { readQueryParam, useQueryParamState } from 'src/hooks/use-query-param-state'
 import { useGlobalContext } from 'src/provider/global-provider'
 import { fCurrency, fNumber } from 'src/utils/format-number'
 import { fDate } from 'src/utils/format-time'
@@ -49,14 +50,42 @@ export function LeaderboardTable() {
     const network = getNetwork()
     const { timePeriod } = useGlobalContext()
 
-    const [page, setPage] = useState(0)
-    const [addressType, setAddressType] = useState<AddressTypeFilter>('all')
-    const [sortBy, setSortBy] = useState<SortByOption>('volume')
+    // Shareable state: mirrored into the URL query string
+    const [page, setPage] = useQueryParamState<number>('page', {
+        defaultValue: 0,
+        deserialize: raw => {
+            const parsed = Number(raw)
+            return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+        },
+    })
+    const [addressType, setAddressType] = useQueryParamState<AddressTypeFilter>('chain', {
+        defaultValue: 'all',
+        deserialize: raw => (raw === 'sui' || raw === 'eth' ? raw : null),
+    })
+    const [sortBy, setSortBy] = useQueryParamState<SortByOption>('sortBy', {
+        defaultValue: 'volume',
+        deserialize: raw => (raw === 'count' ? raw : null),
+    })
 
-    // Reset page when filters change
+    // Reset page when the global time period actually changes. The provider
+    // hydrates the period from the URL *after* mount — that first transition
+    // (landing exactly on the URL's period value) is hydration, not a user
+    // change, so it must not wipe a shared ?page=.
+    const prevTimePeriod = useRef<string>(timePeriod)
+    const pendingUrlPeriod = useRef<string | null>(readQueryParam('period'))
     useEffect(() => {
+        if (prevTimePeriod.current === timePeriod) {
+            return
+        }
+        prevTimePeriod.current = timePeriod
+        if (pendingUrlPeriod.current === timePeriod) {
+            pendingUrlPeriod.current = null
+            return
+        }
+        pendingUrlPeriod.current = null
         setPage(0)
-    }, [addressType, sortBy, timePeriod])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [timePeriod])
 
     // Build query string
     const queryString = useMemo(() => {
@@ -105,12 +134,14 @@ export function LeaderboardTable() {
     const handleAddressTypeChange = (_: React.SyntheticEvent, newValue: AddressTypeFilter) => {
         if (newValue !== null) {
             setAddressType(newValue)
+            setPage(0)
         }
     }
 
     const handleSortChange = (_: React.MouseEvent<HTMLElement>, newSort: SortByOption) => {
         if (newSort !== null) {
             setSortBy(newSort)
+            setPage(0)
         }
     }
 

@@ -12,8 +12,11 @@ import {
     Typography,
 } from '@mui/material'
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useDebounce } from 'use-debounce'
 import { Iconify } from 'src/components/iconify'
+import { writeQueryParams } from 'src/hooks/use-query-param-state'
+import { isValidEthAddress, isValidSuiAddress } from 'src/utils/address-validation'
 import { TransactionsTable } from 'src/components/transactions/transactions-table'
 import UserStatsWidgets from 'src/components/widgets/user-stats-widgets'
 import { DashboardContent } from 'src/layouts/dashboard'
@@ -97,11 +100,69 @@ function WalletActionButton({
 const SUI_LOGO_PATH = '/assets/icons/brands/sui.svg'
 const ETH_LOGO_PATH = '/assets/icons/brands/eth.svg'
 
+function ShareProfileButton() {
+    const [copied, setCopied] = useState(false)
+    const timeoutRef = useRef<ReturnType<typeof setTimeout>>()
+
+    // Clear pending feedback timeout on unmount
+    useEffect(() => () => clearTimeout(timeoutRef.current), [])
+
+    const handleShare = async () => {
+        try {
+            await navigator.clipboard.writeText(window.location.href)
+            setCopied(true)
+            clearTimeout(timeoutRef.current)
+            timeoutRef.current = setTimeout(() => setCopied(false), 2000)
+        } catch (error) {
+            console.error('Failed to copy profile link:', error)
+        }
+    }
+
+    return (
+        <Button
+            variant="outlined"
+            size="small"
+            color={copied ? 'success' : 'primary'}
+            onClick={handleShare}
+            startIcon={
+                <Iconify icon={copied ? 'eva:checkmark-fill' : 'solar:share-bold'} width={18} />
+            }
+            sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+        >
+            {copied ? 'Link copied!' : 'Share profile'}
+        </Button>
+    )
+}
+
 function ProfileContent() {
     const searchParams = useSearchParams()
 
     const [suiAddress, setSuiAddress] = useState(searchParams?.get('suiAddress') || '')
     const [ethAddress, setEthAddress] = useState(searchParams?.get('ethAddress') || '')
+
+    // Validation (only flag as error once the value is complete enough to judge)
+    const suiValid = !suiAddress || isValidSuiAddress(suiAddress)
+    const ethValid = !ethAddress || isValidEthAddress(ethAddress)
+
+    // Only query/share valid addresses — avoids silent empty results on typos
+    const activeSuiAddress = useMemo(
+        () => (suiAddress && isValidSuiAddress(suiAddress) ? suiAddress : ''),
+        [suiAddress],
+    )
+    const activeEthAddress = useMemo(
+        () => (ethAddress && isValidEthAddress(ethAddress) ? ethAddress : ''),
+        [ethAddress],
+    )
+
+    // Keep the URL in sync so any profile view is a shareable link
+    const [debouncedSui] = useDebounce(activeSuiAddress, 400)
+    const [debouncedEth] = useDebounce(activeEthAddress, 400)
+    useEffect(() => {
+        writeQueryParams({
+            suiAddress: debouncedSui || null,
+            ethAddress: debouncedEth || null,
+        })
+    }, [debouncedSui, debouncedEth])
 
     const handlePasteSui = async () => {
         try {
@@ -158,7 +219,11 @@ function ProfileContent() {
                             variant="outlined"
                             value={suiAddress}
                             placeholder="6a44..."
-                            onChange={e => setSuiAddress(e.target.value)}
+                            error={!suiValid}
+                            helperText={
+                                !suiValid ? 'Invalid SUI address — expected 64 hex characters' : ' '
+                            }
+                            onChange={e => setSuiAddress(e.target.value.trim())}
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
@@ -241,7 +306,13 @@ function ProfileContent() {
                             variant="outlined"
                             placeholder="0x..."
                             value={ethAddress}
-                            onChange={e => setEthAddress(e.target.value)}
+                            error={!ethValid}
+                            helperText={
+                                !ethValid
+                                    ? 'Invalid Ethereum address — expected 0x + 40 hex characters'
+                                    : ' '
+                            }
+                            onChange={e => setEthAddress(e.target.value.trim())}
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
@@ -307,10 +378,16 @@ function ProfileContent() {
                     </Stack>
                 </Grid>
             </Grid>
-            {suiAddress || ethAddress ? (
+            {activeSuiAddress || activeEthAddress ? (
                 <>
-                    <UserStatsWidgets suiAddress={suiAddress} ethAddress={ethAddress} />
-                    <TransactionsTable suiAddress={suiAddress} ethAddress={ethAddress} />
+                    <Stack direction="row" justifyContent="flex-end" sx={{ mb: 2 }}>
+                        <ShareProfileButton />
+                    </Stack>
+                    <UserStatsWidgets suiAddress={activeSuiAddress} ethAddress={activeEthAddress} />
+                    <TransactionsTable
+                        suiAddress={activeSuiAddress}
+                        ethAddress={activeEthAddress}
+                    />
                 </>
             ) : (
                 <Box
